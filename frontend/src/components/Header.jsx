@@ -1,15 +1,13 @@
 // Header.jsx
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const Header = ({
   currentUser,
   username,
   setUsername,
   handleSetUser,
-  activeTab,
-  setActiveTab,
-  setCurrentUser,
-  setSavedVideos,
+  handleLogout, // ✅ added here
   isLoading,
 }) => {
   return (
@@ -23,27 +21,16 @@ const Header = ({
         {currentUser ? (
           <div className="user-info">
             <p>Welcome, {currentUser.username}!</p>
-            <button
-              onClick={() => setActiveTab('search')}
-              className={`home-btn ${activeTab === 'search' ? 'active' : ''}`}
-            >
+
+            <Link to="/" className="home-btn">
               Home
-            </button>
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`dashboard-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-            >
+            </Link>
+            <Link to="/dashboard" className="dashboard-btn">
               Dashboard
-            </button>
-            <button
-              onClick={() => {
-                localStorage.removeItem('codetube_user');
-                setCurrentUser(null);
-                setUsername('');
-                setSavedVideos([]);
-              }}
-              className="logout-btn"
-            >
+            </Link>
+
+            {/* ✅ use the handleLogout passed from App.jsx */}
+            <button onClick={handleLogout} className="logout-btn">
               Logout
             </button>
           </div>
@@ -150,24 +137,13 @@ const Header = ({
           border-radius: 4px;
           font-weight: bold;
           cursor: pointer;
+          text-decoration: none;
           transition: background-color 0.2s, transform 0.2s;
         }
-        /* hover with higher specificity to override active */
-        .user-info .home-btn:hover,
-        .user-info .dashboard-btn:hover {
-          background-color: #d4d4d4 !important;
+        .home-btn:hover,
+        .dashboard-btn:hover {
+          background-color: #d4d4d4;
           transform: translateY(-2px);
-        }
-        .home-btn:disabled,
-        .dashboard-btn:disabled {
-          background-color: #ccc;
-          cursor: not-allowed;
-        }
-        .user-info .home-btn.active,
-        .user-info .dashboard-btn.active {
-          background-color: white;
-          color: #282c34;
-          font-weight: bold;
         }
 
         @media (max-width: 768px) {
