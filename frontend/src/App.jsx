@@ -1,69 +1,80 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import { FaBookmark } from 'react-icons/fa';
+import { FaSearch } from 'react-icons/fa';
 
-// Base URL for our backend API
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:5000';
 
 function App() {
-  // State variables to manage our application data
-  const [username, setUsername] = useState(''); // Current username input
-  const [currentUser, setCurrentUser] = useState(null); // Logged-in user data
-  const [searchQuery, setSearchQuery] = useState(''); // Search input text
-  const [searchResults, setSearchResults] = useState([]); // Results from YouTube search
-  const [savedVideos, setSavedVideos] = useState([]); // User's saved videos
-  const [activeTab, setActiveTab] = useState('search'); // Current active tab
-  const [isLoading, setIsLoading] = useState(false); // Loading state for API calls
+  const [username, setUsername] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [savedVideos, setSavedVideos] = useState([]);
+  const [activeTab, setActiveTab] = useState('search');
+  const [isLoading, setIsLoading] = useState(false);
+  const [savedIds, setSavedIds] = useState(new Set());
+  const [notification, setNotification] = useState(''); // popup notification
 
-  // Function to set the current user
   const handleSetUser = async () => {
-    if (!username.trim()) {
-      alert('Please enter a username');
-      return;
-    }
-    
+    if (!username.trim()) return alert('Please enter a username');
     try {
       setIsLoading(true);
       const response = await axios.post(`${API_BASE}/api/user`, { username });
       setCurrentUser(response.data);
       localStorage.setItem('codetube_user', JSON.stringify(response.data));
       loadSavedVideos(response.data.id);
+      handleSearch('');
     } catch (error) {
-      console.error('Error setting user:', error);
-      alert('Error setting user. Please try again.');
+      console.error(error);
+      alert('Error setting user');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Function to search for coding videos
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      alert('Please enter a search term');
-      return;
-    }
-    
+  const handleSearch = async (query = searchQuery) => {
     try {
       setIsLoading(true);
-      const response = await axios.get(
-        `${API_BASE}/api/search?q=${encodeURIComponent(searchQuery)}`
-      );
+      const response = await axios.get(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`);
       setSearchResults(response.data);
     } catch (error) {
-      console.error('Error searching videos:', error);
-      alert('Error searching videos. Please try again.');
+      console.error(error);
+      alert('Error searching videos');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Function to save a video to user's collection
   const saveVideo = async (video) => {
-    if (!currentUser) {
-      alert('Please set a username first');
+    if (!currentUser) return alert('Set username first');
+
+    // If already saved, unsave
+    if (savedIds.has(video.id)) {
+      try {
+        setIsLoading(true);
+        await axios.delete(`${API_BASE}/api/saved`, { data: { userId: currentUser.id, videoId: video.id } });
+        setSavedIds((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(video.id);
+          return newSet;
+        });
+        setNotification('Video removed successfully!');
+        setTimeout(() => setNotification(''), 2000);
+        loadSavedVideos(currentUser.id);
+      } catch (error) {
+        console.error(error);
+        alert('Error unsaving video');
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
-    
+
+    // Otherwise, save video
     try {
       setIsLoading(true);
       await axios.post(`${API_BASE}/api/save`, {
@@ -71,64 +82,65 @@ function App() {
         videoId: video.id,
         title: video.title,
         channel: video.channel,
-        thumbnail: video.thumbnail
+        thumbnail: video.thumbnail,
       });
-      alert('Video saved successfully!');
+      setSavedIds((prev) => new Set(prev).add(video.id));
+      setNotification('Video saved successfully!');
+      setTimeout(() => setNotification(''), 2000);
       loadSavedVideos(currentUser.id);
     } catch (error) {
-      console.error('Error saving video:', error);
-      alert(error.response?.data?.error || 'Error saving video. Please try again.');
+      console.error(error);
+      alert('Error saving video');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Function to load user's saved videos
   const loadSavedVideos = async (userId) => {
     try {
       const response = await axios.get(`${API_BASE}/api/saved/${userId}`);
       setSavedVideos(response.data);
+      const ids = new Set(response.data.map((v) => v.video_id));
+      setSavedIds(ids);
     } catch (error) {
-      console.error('Error loading saved videos:', error);
+      console.error(error);
     }
   };
 
-  // Function to update video progress
   const updateProgress = async (videoId, progress) => {
     try {
       await axios.put(`${API_BASE}/api/progress`, {
         userId: currentUser.id,
         videoId,
-        progress: parseInt(progress)
+        progress: parseInt(progress),
       });
-      loadSavedVideos(currentUser.id); // Reload to see the updated progress
+      loadSavedVideos(currentUser.id);
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.error(error);
     }
   };
 
-  // Function to remove a saved video
   const removeVideo = async (videoId) => {
-    if (!window.confirm('Are you sure you want to remove this video?')) {
-      return;
-    }
-    
+    if (!window.confirm('Are you sure you want to remove this video?')) return;
     try {
       setIsLoading(true);
-      await axios.delete(`${API_BASE}/api/saved`, {
-        data: { userId: currentUser.id, videoId }
+      await axios.delete(`${API_BASE}/api/saved`, { data: { userId: currentUser.id, videoId } });
+      setSavedIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(videoId);
+        return newSet;
       });
+      setNotification('Video removed successfully!');
+      setTimeout(() => setNotification(''), 2000);
       loadSavedVideos(currentUser.id);
-      alert('Video removed successfully!');
     } catch (error) {
-      console.error('Error removing video:', error);
-      alert('Error removing video. Please try again.');
+      console.error(error);
+      alert('Error removing video');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Check for existing user when component loads
   useEffect(() => {
     const savedUser = localStorage.getItem('codetube_user');
     if (savedUser) {
@@ -136,69 +148,41 @@ function App() {
       setCurrentUser(user);
       setUsername(user.username);
       loadSavedVideos(user.id);
+      handleSearch('');
     }
   }, []);
 
-  // Main component render
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>CodeTube</h1>
-        <p>YouTube for Coding Tutorials</p>
-        
-        {/* User setup section */}
-        {!currentUser ? (
-          <div className="user-setup">
-            <input
-              type="text"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSetUser()}
-              disabled={isLoading}
-            />
-            <button onClick={handleSetUser} disabled={isLoading}>
-              {isLoading ? 'Setting Up...' : 'Set Username'}
-            </button>
-          </div>
-        ) : (
-          <div className="user-info">
-            <p>Welcome, {currentUser.username}!</p>
-            <button 
-              onClick={() => {
-                localStorage.removeItem('codetube_user');
-                setCurrentUser(null);
-                setUsername('');
-                setSavedVideos([]);
-              }}
-              className="logout-btn"
-            >
-              Logout
-            </button>
-          </div>
-        )}
-      </header>
+      <Header
+        currentUser={currentUser}
+        username={username}
+        setUsername={setUsername}
+        handleSetUser={handleSetUser}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        setCurrentUser={setCurrentUser}
+        setSavedVideos={setSavedVideos}
+        isLoading={isLoading}
+      />
 
-      {/* Main content - only show if user is logged in */}
+      {notification && (
+  <div className="popup-card-wrapper">
+    <div className={`popup-card ${notification.includes('removed') ? 'error' : 'success'}`}>
+      <div className="popup-icon">
+        {notification.includes('removed') ? '✖' : '✔'}
+      </div>
+      <div className="popup-message">{notification}</div>
+    </div>
+  </div>
+)}
+
+
+
+
+
       {currentUser && (
         <div className="main-content">
-          {/* Tab navigation */}
-          <div className="tabs">
-            <button 
-              className={activeTab === 'search' ? 'active' : ''}
-              onClick={() => setActiveTab('search')}
-            >
-              Search
-            </button>
-            <button 
-              className={activeTab === 'saved' ? 'active' : ''}
-              onClick={() => setActiveTab('saved')}
-            >
-              Saved Videos ({savedVideos.length})
-            </button>
-          </div>
-
-          {/* Loading indicator */}
           {isLoading && (
             <div className="loading">
               <div className="spinner"></div>
@@ -206,7 +190,6 @@ function App() {
             </div>
           )}
 
-          {/* Search tab content */}
           {activeTab === 'search' && (
             <div className="search-section">
               <div className="search-box">
@@ -218,27 +201,26 @@ function App() {
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   disabled={isLoading}
                 />
-                <button onClick={handleSearch} disabled={isLoading}>
-                  Search
+                <button onClick={() => handleSearch()} disabled={isLoading}>
+                 Search <FaSearch />
                 </button>
               </div>
 
-              {/* Search results */}
               <div className="results">
                 {searchResults.length === 0 ? (
-                  <p className="no-results">Enter a search term to find coding tutorials</p>
+                  <p className="no-results">No videos found.</p>
                 ) : (
-                  searchResults.map(video => (
+                  searchResults.map((video) => (
                     <div key={video.id} className="video-card">
                       <img src={video.thumbnail} alt={video.title} />
                       <div className="video-info">
                         <h3>{video.title}</h3>
                         <p className="channel">{video.channel}</p>
-                        <button 
+                        <button
+                          className={`save-btn ${savedIds.has(video.id) ? 'saved' : ''}`}
                           onClick={() => saveVideo(video)}
-                          disabled={isLoading}
                         >
-                          Save Video
+                          <FaBookmark /> {savedIds.has(video.id) ? 'Saved' : 'Save'}
                         </button>
                       </div>
                     </div>
@@ -248,13 +230,12 @@ function App() {
             </div>
           )}
 
-          {/* Saved videos tab content */}
-          {activeTab === 'saved' && (
+          {activeTab === 'dashboard' && (
             <div className="saved-videos">
               {savedVideos.length === 0 ? (
-                <p className="no-saved">No saved videos yet. Search for coding tutorials and save them!</p>
+                <p className="no-saved">No saved videos yet. Search and save them to see here!</p>
               ) : (
-                savedVideos.map(video => (
+                savedVideos.map((video) => (
                   <div key={video.id} className="saved-video">
                     <img src={video.thumbnail} alt={video.title} />
                     <div className="video-details">
@@ -263,8 +244,8 @@ function App() {
                       <div className="progress-section">
                         <label>
                           Learning Progress:
-                          <select 
-                            value={video.progress} 
+                          <select
+                            value={video.progress}
                             onChange={(e) => updateProgress(video.video_id, e.target.value)}
                             disabled={isLoading}
                           >
@@ -279,7 +260,7 @@ function App() {
                           Saved on: {new Date(video.saved_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <button 
+                      <button
                         className="remove-btn"
                         onClick={() => removeVideo(video.video_id)}
                         disabled={isLoading}
@@ -294,6 +275,7 @@ function App() {
           )}
         </div>
       )}
+      <Footer />
     </div>
   );
 }
