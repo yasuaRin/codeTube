@@ -44,6 +44,58 @@ const db = new sqlite3.Database('./codetube.db', (err) => {
 
 // YouTube API key
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+const bcrypt = require('bcrypt');
+const SALT_ROUNDS = 10;
+
+// Register user
+app.post('/api/register', (req, res) => {
+  const { username, email, password } = req.body;
+
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'Username, email, and password are required' });
+  }
+
+  // Hash password
+  bcrypt.hash(password, SALT_ROUNDS, (err, hash) => {
+    if (err) return res.status(500).json({ error: 'Error hashing password' });
+
+    db.run(
+      'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+      [username, email, hash],
+      function (err) {
+        if (err) {
+          if (err.message.includes('UNIQUE')) {
+            return res.status(409).json({ error: 'Username or email already exists' });
+          }
+          return res.status(500).json({ error: 'Failed to create user' });
+        }
+        res.json({ id: this.lastID, username, email });
+      }
+    );
+  });
+});
+
+// Login user
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
+
+  db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
+    if (err) return res.status(500).json({ error: 'Database error' });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Compare password
+    bcrypt.compare(password, user.password, (err, match) => {
+      if (err) return res.status(500).json({ error: 'Error checking password' });
+      if (!match) return res.status(401).json({ error: 'Invalid password' });
+
+      res.json({ id: user.id, username: user.username, email: user.email });
+    });
+  });
+});
 
 // API Endpoint 1: Search
 app.get('/api/search', async (req, res) => {
