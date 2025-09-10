@@ -13,11 +13,15 @@ export default function Home({ currentUser, apiBase: propApiBase }) {
   const [isLoading, setIsLoading] = useState(false);
   const [cinemaVideo, setCinemaVideo] = useState(null);
 
-  useEffect(() => {
-    setCinemaVideo(null);
-    if (currentUser) loadSavedVideos(currentUser.id);
-    fetchAllVideos();
-  }, [currentUser]);
+  // ✅ Move function declarations above useEffect
+  const shuffleArray = (array) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  };
 
   const fetchAllVideos = async () => {
     try {
@@ -33,14 +37,19 @@ export default function Home({ currentUser, apiBase: propApiBase }) {
     }
   };
 
-  const shuffleArray = (array) => {
-    const newArray = [...array];
-    for (let i = newArray.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-    }
-    return newArray;
+  const loadSavedVideos = async (userId) => {
+    try {
+      const response = await axios.get(`${apiBase}/api/saved/${userId}`);
+      const ids = new Set(response.data.map((v) => v.video_id));
+      setSavedIds(ids);
+    } catch (err) { console.error(err); }
   };
+
+  useEffect(() => {
+    setCinemaVideo(null);
+    if (currentUser) loadSavedVideos(currentUser.id);
+    fetchAllVideos();
+  }, [currentUser]);
 
   const handleSearch = async (query = searchQuery) => {
     try {
@@ -84,14 +93,6 @@ export default function Home({ currentUser, apiBase: propApiBase }) {
       setNotification('Video saved successfully!');
       setTimeout(() => setNotification(''), 2000);
       loadSavedVideos(currentUser.id);
-    } catch (err) { console.error(err); }
-  };
-
-  const loadSavedVideos = async (userId) => {
-    try {
-      const response = await axios.get(`${apiBase}/api/saved/${userId}`);
-      const ids = new Set(response.data.map((v) => v.video_id));
-      setSavedIds(ids);
     } catch (err) { console.error(err); }
   };
 

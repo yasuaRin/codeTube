@@ -4,7 +4,6 @@ import axios from 'axios';
 import VideoPlayer from '../components/VideoPlayer';
 
 const Dashboard = ({ currentUser, apiBase }) => {
-  // Set default apiBase if not provided
   const effectiveApiBase = apiBase || process.env.REACT_APP_API_BASE || "http://localhost:3001";
   
   const [savedVideos, setSavedVideos] = useState([]);
@@ -15,29 +14,26 @@ const Dashboard = ({ currentUser, apiBase }) => {
   const [videoStatuses, setVideoStatuses] = useState({});
 
   useEffect(() => {
-    if (currentUser) {
-      loadSavedVideos(currentUser.id);
-    }
+    if (!currentUser) return;
+
+    const fetchSavedVideos = async () => {
+      await loadSavedVideos(currentUser.id);
+    };
+
+    fetchSavedVideos();
   }, [currentUser]);
 
   const loadSavedVideos = async (userId) => {
     try {
       setIsLoading(true);
-      
-      // Validate API base URL
-      if (!effectiveApiBase) {
-        throw new Error('API base URL is not defined');
-      }
-      
+      if (!effectiveApiBase) throw new Error('API base URL is not defined');
+
       const response = await axios.get(`${effectiveApiBase}/api/saved/${userId}`);
-      
-      // Handle case where response.data might be null/undefined
       const videoData = response.data || [];
       
       const videosWithProgress = videoData.map((v) => {
         const progress = v.progress || 0;
-        const status =
-          progress >= 90 ? 'completed' : progress > 0 ? 'ongoing' : 'not-started';
+        const status = progress >= 90 ? 'completed' : progress > 0 ? 'ongoing' : 'not-started';
 
         return {
           ...v,
@@ -69,8 +65,6 @@ const Dashboard = ({ currentUser, apiBase }) => {
 
   const removeVideo = async (videoId) => {
     if (!window.confirm('Are you sure you want to remove this video?')) return;
-    
-    // Validate API base URL
     if (!effectiveApiBase) {
       console.error('API base URL is not defined');
       setNotification('Configuration error. Please refresh the page.');
@@ -108,7 +102,6 @@ const Dashboard = ({ currentUser, apiBase }) => {
   };
 
   const saveVideoStatus = async (videoId) => {
-    // Validate API base URL
     if (!effectiveApiBase) {
       console.error('API base URL is not defined');
       setNotification('Configuration error. Please refresh the page.');
@@ -265,64 +258,17 @@ const Dashboard = ({ currentUser, apiBase }) => {
         .video-info h3 { margin: 0 0 8px 0; font-size: 16px; line-height: 1.4; color: #333; }
         .video-info .channel { margin: 0 0 15px 0; font-size: 14px; color: #666; }
         
-        .status-section {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          margin-bottom: 15px;
-        }
-
+        .status-section { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
         .dropdown-wrapper { position: relative; }
-
-        .status-dropdown { 
-          width: 100%; 
-          padding: 8px 12px;
-          border: 1px solid #ddd;
-          border-radius: 6px;
-          background-color: #f9f9f9;
-          font-size: 14px;
-          cursor: pointer;
-          appearance: none;
-          background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D'12'%20height%3D'8'%20viewBox%3D'0%200%2012%208'%20fill%3D'none'%20xmlns%3D'http://www.w3.org/2000/svg'%3E%3Cpath%20d%3D'M1%201L6%206L11%201'%20stroke%3D'%23666'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'/%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 10px center;
-          background-size: 12px;
-        }
-
-        .status-dropdown:focus {
-          outline: none;
-          border-color: #61dafb;
-          box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.2);
-        }
-
-        /* Force dropdown to open downward */
-        .force-down option {
-          direction: ltr;
-        }
-
+        .status-dropdown { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; background-color: #f9f9f9; font-size: 14px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D'12'%20height%3D'8'%20viewBox%3D'0%200%2012%208'%20fill%3D'none'%20xmlns%3D'http://www.w3.org/2000/svg'%3E%3Cpath%20d%3D'M1%201L6%206L11%201'%20stroke%3D'%23666'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-size: 12px; }
+        .status-dropdown:focus { outline: none; border-color: #61dafb; box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.2); }
+        .force-down option { direction: ltr; }
         .video-actions { display: flex; gap: 8px; }
-
-        .save-status-btn {
-          flex: 1;
-          padding: 8px 12px;
-          background: #28a745;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 5px;
-          font-size: 14px;
-        }
-
+        .save-status-btn { flex: 1; padding: 8px 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 14px; }
         .save-status-btn:hover:not(:disabled) { background: #218838; }
         .save-status-btn:disabled { background: #6c757d; cursor: not-allowed; opacity: 0.6; }
-
         .remove-btn { flex: 1; padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 14px; }
         .remove-btn:hover { background: #c82333; }
-
         .popup-card-wrapper { position: fixed; bottom: 20px; right: 20px; z-index: 999; }
         .popup-card { width: 250px; background: white; border-radius: 12px; padding: 20px; text-align: center; font-weight: bold; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .popup-card.success { border-bottom: 4px solid green; }

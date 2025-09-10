@@ -11,7 +11,7 @@ import './App.css';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false); // ✅ Removed setIsLoading to fix ESLint
 
   useEffect(() => {
     const savedUser = localStorage.getItem('codetube_user');
