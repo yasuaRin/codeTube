@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FaBookmark, FaSearch } from 'react-icons/fa';
 import axios from 'axios';
 import VideoPlayer from '../components/VideoPlayer';
@@ -13,7 +13,6 @@ export default function Home({ currentUser, apiBase: propApiBase }) {
   const [isLoading, setIsLoading] = useState(false);
   const [cinemaVideo, setCinemaVideo] = useState(null);
 
-  // ✅ Move function declarations above useEffect
   const shuffleArray = (array) => {
     const newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
@@ -23,7 +22,7 @@ export default function Home({ currentUser, apiBase: propApiBase }) {
     return newArray;
   };
 
-  const fetchAllVideos = async () => {
+  const fetchAllVideos = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await axios.get(`${apiBase}/api/search?q=`);
@@ -35,21 +34,21 @@ export default function Home({ currentUser, apiBase: propApiBase }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [apiBase]);
 
-  const loadSavedVideos = async (userId) => {
+  const loadSavedVideos = useCallback(async (userId) => {
     try {
       const response = await axios.get(`${apiBase}/api/saved/${userId}`);
       const ids = new Set(response.data.map((v) => v.video_id));
       setSavedIds(ids);
     } catch (err) { console.error(err); }
-  };
+  }, [apiBase]);
 
   useEffect(() => {
     setCinemaVideo(null);
     if (currentUser) loadSavedVideos(currentUser.id);
     fetchAllVideos();
-  }, [currentUser]);
+  }, [currentUser, fetchAllVideos, loadSavedVideos]);
 
   const handleSearch = async (query = searchQuery) => {
     try {
@@ -164,7 +163,6 @@ export default function Home({ currentUser, apiBase: propApiBase }) {
       <style>{`
         .home { padding: 20px; max-width: 1200px; margin: 0 auto; }
 
-        /* Search bar on top, under header */
         .search-container {
           width: 100%;
           max-width: 500px;
