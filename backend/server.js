@@ -47,6 +47,11 @@ const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const bcrypt = require('bcrypt');
 const SALT_ROUNDS = 10;
 
+// Root route (added)
+app.get('/', (req, res) => {
+  res.send('CodeTube backend is running!');
+});
+
 // Register user
 app.post('/api/register', (req, res) => {
   const { username, email, password } = req.body;
@@ -242,6 +247,7 @@ app.put('/api/progress', (req, res) => {
     }
   );
 });
+
 // API Endpoint 7: Remove video
 app.delete('/api/saved', (req, res) => {
   const { userId, videoId } = req.body;
