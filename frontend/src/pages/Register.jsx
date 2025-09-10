@@ -12,6 +12,11 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  const validatePassword = (pwd) => {
+    const regex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+    return regex.test(pwd);
+  };
+
   const handleRegister = async () => {
     if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       return alert('All fields are required');
@@ -19,6 +24,10 @@ export default function Register() {
     if (password !== confirmPassword) {
       return alert('Passwords do not match');
     }
+    if (!validatePassword(password)) {
+      return alert('Password must be at least 8 characters, include 1 uppercase letter, 1 number, and 1 special character.');
+    }
+
     setIsLoading(true);
     try {
       await axios.post(`${API_BASE}/api/register`, {
@@ -125,7 +134,7 @@ export default function Register() {
 
 const styles = {
   container: {
-    minHeight: '100vh', // Changed for perfect vertical centering
+    minHeight: '100vh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
