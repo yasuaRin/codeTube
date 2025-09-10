@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FaTrash, FaSave } from 'react-icons/fa';
 import axios from 'axios';
 import VideoPlayer from '../components/VideoPlayer';
@@ -13,17 +13,7 @@ const Dashboard = ({ currentUser, apiBase }) => {
   const [cinemaVideo, setCinemaVideo] = useState(null);
   const [videoStatuses, setVideoStatuses] = useState({});
 
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const fetchSavedVideos = async () => {
-      await loadSavedVideos(currentUser.id);
-    };
-
-    fetchSavedVideos();
-  }, [currentUser]);
-
-  const loadSavedVideos = async (userId) => {
+  const loadSavedVideos = useCallback(async (userId) => {
     try {
       setIsLoading(true);
       if (!effectiveApiBase) throw new Error('API base URL is not defined');
@@ -61,7 +51,12 @@ const Dashboard = ({ currentUser, apiBase }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [effectiveApiBase]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    loadSavedVideos(currentUser.id);
+  }, [currentUser, loadSavedVideos]);
 
   const removeVideo = async (videoId) => {
     if (!window.confirm('Are you sure you want to remove this video?')) return;
@@ -257,7 +252,6 @@ const Dashboard = ({ currentUser, apiBase }) => {
         .video-info { padding: 15px; }
         .video-info h3 { margin: 0 0 8px 0; font-size: 16px; line-height: 1.4; color: #333; }
         .video-info .channel { margin: 0 0 15px 0; font-size: 14px; color: #666; }
-        
         .status-section { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
         .dropdown-wrapper { position: relative; }
         .status-dropdown { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; background-color: #f9f9f9; font-size: 14px; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D'12'%20height%3D'8'%20viewBox%3D'0%200%2012%208'%20fill%3D'none'%20xmlns%3D'http://www.w3.org/2000/svg'%3E%3Cpath%20d%3D'M1%201L6%206L11%201'%20stroke%3D'%23666'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-size: 12px; }
