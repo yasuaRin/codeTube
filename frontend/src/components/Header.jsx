@@ -43,7 +43,8 @@ const Header = ({
 
       <style>{`
         .App-header {
-          display: flex;
+          display: inline-block; /* changed from flex to inline-block */
+          width: 100%; /* ensure full width */
           justify-content: space-between;
           align-items: center;
           background-color: #282c34;
@@ -51,7 +52,6 @@ const Header = ({
           color: white;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
           border-bottom: 2px solid #ccc;
-          flex-wrap: nowrap; /* Keep layout fixed */
         }
         .header-left {
           display: flex;
