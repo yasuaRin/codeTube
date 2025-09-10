@@ -25,7 +25,7 @@ export default function Home({ currentUser, apiBase: propApiBase }) {
   const fetchAllVideos = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${apiBase}/api/search?q=`);
+      const response = await axios.get(`${apiBase}/api/search?q=&maxResults=10`);
       const shuffledVideos = shuffleArray(response.data);
       setSearchResults(shuffledVideos);
     } catch (error) {
@@ -53,7 +53,7 @@ export default function Home({ currentUser, apiBase: propApiBase }) {
   const handleSearch = async (query = searchQuery) => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${apiBase}/api/search?q=${encodeURIComponent(query)}`);
+      const response = await axios.get(`${apiBase}/api/search?q=${encodeURIComponent(query)}&maxResults=5`);
       const shuffledResults = shuffleArray(response.data);
       setSearchResults(shuffledResults);
     } catch (error) {
