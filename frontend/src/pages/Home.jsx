@@ -4,7 +4,7 @@ import axios from 'axios';
 import VideoPlayer from '../components/VideoPlayer';
 
 export default function Home({ currentUser, apiBase: propApiBase }) {
-  const apiBase = propApiBase || 'http://localhost:5000';
+  const apiBase = propApiBase || process.env.REACT_APP_API_BASE || 'https://codetube-production.up.railway.app';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
