@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FaBookmark,  FaSearch } from 'react-icons/fa';
+import { FaBookmark, FaSearch } from 'react-icons/fa';
 import axios from 'axios';
 import VideoPlayer from '../components/VideoPlayer';
 
-export default function Home({ currentUser, apiBase }) {
+export default function Home({ currentUser, apiBase: propApiBase }) {
+  const apiBase = propApiBase || 'http://localhost:5000';
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [savedIds, setSavedIds] = useState(new Set());
@@ -12,7 +14,7 @@ export default function Home({ currentUser, apiBase }) {
   const [cinemaVideo, setCinemaVideo] = useState(null);
 
   useEffect(() => {
-    setCinemaVideo(null); // Reset selected video on page load
+    setCinemaVideo(null);
     if (currentUser) loadSavedVideos(currentUser.id);
     fetchAllVideos();
   }, [currentUser]);
@@ -95,17 +97,19 @@ export default function Home({ currentUser, apiBase }) {
 
   return (
     <div className="home">
-      <div className="search-box">
-        <input
-          type="text"
-          placeholder="Search for coding tutorials..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-        />
-        <button onClick={() => handleSearch()}>
-          Search <FaSearch />
-        </button>
+      {/* Search bar below header */}
+      <div className="search-container">
+        <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }}>
+          <input
+            type="text"
+            placeholder="Search for coding tutorials..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button type="submit">
+            <FaSearch style={{ marginRight: '5px' }} /> Search
+          </button>
+        </form>
       </div>
 
       <div className="results">
@@ -114,12 +118,12 @@ export default function Home({ currentUser, apiBase }) {
             <p>No videos found.</p>
           ) : (
             searchResults.map((video) => (
-              <div 
-                key={video.id} 
-                className="video-card" 
+              <div
+                key={video.id}
+                className="video-card"
                 onClick={() => setCinemaVideo({
                   ...video,
-                  url: video.url || video.video_url || `https://www.youtube.com/watch?v=${video.id}` // <-- FIXED
+                  url: video.url || video.video_url || `https://www.youtube.com/watch?v=${video.id}`
                 })}
               >
                 <img src={video.thumbnail} alt={video.title} />
@@ -157,11 +161,40 @@ export default function Home({ currentUser, apiBase }) {
       )}
 
       <style>{`
-        .home { padding: 20px; }
-        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
-        .search-box input { flex: 1; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
-        .search-box button { padding: 10px 15px; cursor: pointer; border-radius: 5px; border: none; background: #61dafb; color: white; font-weight: bold; }
-        .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .home { padding: 20px; max-width: 1200px; margin: 0 auto; }
+
+        /* Search bar on top, under header */
+        .search-container {
+          width: 100%;
+          max-width: 500px;
+          margin: 20px auto;
+        }
+        .search-container form {
+          display: flex;
+          gap: 10px;
+        }
+        .search-container input {
+          flex: 1;
+          padding: 12px 15px;
+          font-size: 16px;
+          border-radius: 6px;
+          border: 1px solid #ccc;
+        }
+        .search-container button {
+          padding: 12px 20px;
+          font-size: 16px;
+          border-radius: 6px;
+          border: none;
+          background-color: #61dafb;
+          color: #fff;
+          font-weight: bold;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+        }
+        .search-container button:hover { background-color: #21a1f1; }
+
+        .results { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
         .video-card { display: flex; flex-direction: column; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s; background: #fff; }
         .video-card:hover { transform: translateY(-5px); }
         .video-card img { width: 100%; height: 180px; object-fit: cover; }
@@ -170,8 +203,9 @@ export default function Home({ currentUser, apiBase }) {
         .video-info .channel { font-size: 14px; color: gray; }
         .save-btn { cursor: pointer; padding: 5px 10px; margin-top: 5px; border-radius: 4px; border: none; }
         .save-btn.saved { background-color: #61dafb; color: white; }
+
         .popup-card-wrapper { position: fixed; bottom: 20px; right: 20px; z-index: 999; }
-        .popup-card { width: 250px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); text-align: center; font-weight: bold; display: flex; flex-direction: column; align-items: center; }
+        .popup-card { width: 90%; max-width: 250px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); text-align: center; font-weight: bold; display: flex; flex-direction: column; align-items: center; }
         .popup-card.success { border-bottom: 4px solid green; }
         .popup-card.error { border-bottom: 4px solid red; }
         .popup-card .popup-icon { font-size: 24px; color: white; background-color: ${notification && notification.includes('removed') ? 'red' : 'green'}; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }

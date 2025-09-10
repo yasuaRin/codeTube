@@ -4,6 +4,9 @@ import axios from 'axios';
 import VideoPlayer from '../components/VideoPlayer';
 
 const Dashboard = ({ currentUser, apiBase }) => {
+  // Set default apiBase if not provided
+  const effectiveApiBase = apiBase || process.env.REACT_APP_API_BASE || "http://localhost:3001";
+  
   const [savedVideos, setSavedVideos] = useState([]);
   const [savedIds, setSavedIds] = useState(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -20,8 +23,18 @@ const Dashboard = ({ currentUser, apiBase }) => {
   const loadSavedVideos = async (userId) => {
     try {
       setIsLoading(true);
-      const response = await axios.get(`${apiBase}/api/saved/${userId}`);
-      const videosWithProgress = response.data.map((v) => {
+      
+      // Validate API base URL
+      if (!effectiveApiBase) {
+        throw new Error('API base URL is not defined');
+      }
+      
+      const response = await axios.get(`${effectiveApiBase}/api/saved/${userId}`);
+      
+      // Handle case where response.data might be null/undefined
+      const videoData = response.data || [];
+      
+      const videosWithProgress = videoData.map((v) => {
         const progress = v.progress || 0;
         const status =
           progress >= 90 ? 'completed' : progress > 0 ? 'ongoing' : 'not-started';
@@ -46,7 +59,9 @@ const Dashboard = ({ currentUser, apiBase }) => {
       const ids = new Set(videosWithProgress.map((v) => v.video_id));
       setSavedIds(ids);
     } catch (error) {
-      console.error(error);
+      console.error('Error loading saved videos:', error);
+      setNotification('Failed to load saved videos. Please check your connection.');
+      setTimeout(() => setNotification(''), 3000);
     } finally {
       setIsLoading(false);
     }
@@ -54,9 +69,18 @@ const Dashboard = ({ currentUser, apiBase }) => {
 
   const removeVideo = async (videoId) => {
     if (!window.confirm('Are you sure you want to remove this video?')) return;
+    
+    // Validate API base URL
+    if (!effectiveApiBase) {
+      console.error('API base URL is not defined');
+      setNotification('Configuration error. Please refresh the page.');
+      setTimeout(() => setNotification(''), 3000);
+      return;
+    }
+    
     try {
       setIsLoading(true);
-      await axios.delete(`${apiBase}/api/saved`, {
+      await axios.delete(`${effectiveApiBase}/api/saved`, {
         data: { userId: currentUser.id, videoId },
       });
       setSavedIds((prev) => {
@@ -68,8 +92,9 @@ const Dashboard = ({ currentUser, apiBase }) => {
       setTimeout(() => setNotification(''), 2000);
       loadSavedVideos(currentUser.id);
     } catch (error) {
-      console.error(error);
-      alert('Error removing video');
+      console.error('Error removing video:', error);
+      setNotification('Error removing video. Please try again.');
+      setTimeout(() => setNotification(''), 3000);
     } finally {
       setIsLoading(false);
     }
@@ -83,13 +108,21 @@ const Dashboard = ({ currentUser, apiBase }) => {
   };
 
   const saveVideoStatus = async (videoId) => {
+    // Validate API base URL
+    if (!effectiveApiBase) {
+      console.error('API base URL is not defined');
+      setNotification('Configuration error. Please refresh the page.');
+      setTimeout(() => setNotification(''), 3000);
+      return;
+    }
+    
     try {
       const status = videoStatuses[videoId];
       let progress = 0;
       if (status === 'completed') progress = 100;
       else if (status === 'ongoing') progress = 50;
 
-      await axios.put(`${apiBase}/api/progress`, {
+      await axios.put(`${effectiveApiBase}/api/progress`, {
         userId: currentUser.id,
         videoId,
         progress,
@@ -105,7 +138,8 @@ const Dashboard = ({ currentUser, apiBase }) => {
       setTimeout(() => setNotification(''), 2000);
     } catch (error) {
       console.error('Error saving progress:', error);
-      alert('Error saving progress');
+      setNotification('Error saving progress. Please try again.');
+      setTimeout(() => setNotification(''), 3000);
     }
   };
 

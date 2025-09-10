@@ -28,7 +28,6 @@ const Footer = () => {
           background-color: #282c34;
           border-top: 2px solid #060707;
           border-radius: 12px 12px 0 0;
-          margin-top: 40px;
           color: white;
         }
         .footer div h3,
