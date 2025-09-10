@@ -262,6 +262,17 @@ app.delete('/api/saved', (req, res) => {
   );
 });
 
+// GET all users (added)
+app.get('/api/users', (req, res) => {
+  db.all('SELECT id, username, email, created_at FROM users ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Failed to fetch users' });
+    }
+    res.json(rows);
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
